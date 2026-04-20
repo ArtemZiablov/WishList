@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- OpenAPI/Swagger support for API documentation -->
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.14" />
+
+        <!-- Core Entity Framework ORM for database operations -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.2" />
+
+        <!-- EF Core CLI tools for migrations and scaffolding -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+
+        <!-- Additional EF Core tooling for CLI commands (dotnet ef) -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+
+        <!-- PostgreSQL database provider for Entity Framework Core -->
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+
+        <!-- Swagger UI and OpenAPI generation for API documentation -->
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Controllers\" />
+        <Folder Include="Services\" />
+    </ItemGroup>
+
+</Project>
