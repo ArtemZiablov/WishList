@@ -6,7 +6,6 @@ using WishListApp.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -19,9 +18,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IWishListService, WishListService>();
 builder.Services.AddScoped<IWishListItemService, WishListItemService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IFriendshipService, FriendshipService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddAutoMapper(typeof(Program));
-
 
 var app = builder.Build();
 
@@ -33,8 +34,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-
 
 app.Run();
 

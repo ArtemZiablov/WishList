@@ -23,5 +23,16 @@ public class MappingProfile : Profile
                     opt.MapFrom(src => src.Booking != null));
         CreateMap<WishListItemDtos.CreateWishListItemRequest, WishListItem>();
         CreateMap<WishListItemDtos.UpdateWishListItemRequest, WishListItem>();
+        
+        // User
+        CreateMap<User, UserDtos.UserResponse>();
+        CreateMap<UserDtos.UpdateUserRequest, User>();
+
+        // Friendship
+        CreateMap<Friendship, FriendshipDtos.FriendshipResponse>()
+            .ForMember(dest => dest.RequesterName,
+                opt => opt.MapFrom(src => src.Requester.DisplayName))
+            .ForMember(dest => dest.RequesterAvatarUrl,
+                opt => opt.MapFrom(src => src.Requester.AvatarUrl));
     }
 }
