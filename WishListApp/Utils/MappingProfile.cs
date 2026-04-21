@@ -8,12 +8,20 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        // WishList
         CreateMap<WishList, WishListDtos.WishListResponse>()
-            .ForMember(dest => dest.ItemCount, opt => 
-                opt.MapFrom(src => src.Items.Count));
-        
+            .ForMember(dest => dest.ItemCount, 
+                opt => 
+                    opt.MapFrom(src => src.Items.Count));
         CreateMap<WishListDtos.CreateWishListRequest, WishList>();
-        
         CreateMap<WishListDtos.UpdateWishListRequest, WishList>();
+
+        // WishListItem
+        CreateMap<WishListItem, WishListItemDtos.WishListItemResponse>()
+            .ForMember(dest => dest.IsBooked, 
+                opt => 
+                    opt.MapFrom(src => src.Booking != null));
+        CreateMap<WishListItemDtos.CreateWishListItemRequest, WishListItem>();
+        CreateMap<WishListItemDtos.UpdateWishListItemRequest, WishListItem>();
     }
 }

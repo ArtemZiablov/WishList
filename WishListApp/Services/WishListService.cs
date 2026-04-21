@@ -33,7 +33,7 @@ public class WishListService : IWishListService
             .Include(w => w.Items)
             .FirstOrDefaultAsync(w => w.Id == id && w.OwnerId == userId);
         
-        return wishList is null ? null : _mapper.Map<WishListDtos.WishListResponse>(wishList);
+        return _mapper.Map<WishListDtos.WishListResponse>(wishList);
     }
 
     public async Task<WishListDtos.WishListResponse> CreateAsync(Guid userId, WishListDtos.CreateWishListRequest request)

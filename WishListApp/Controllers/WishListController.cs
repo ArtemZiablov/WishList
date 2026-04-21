@@ -1,0 +1,66 @@
+using Microsoft.AspNetCore.Mvc;
+using WishListApp.DTOs;
+using WishListApp.Interfaces;
+
+namespace WishListApp.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]  // → /api/wishlist
+public class WishListController : ControllerBase
+{
+    private readonly IWishListService _wishListService;
+
+    public WishListController(IWishListService wishListService)
+    {
+        _wishListService = wishListService;
+    }
+
+    // GET /api/wishlists
+    [HttpGet]
+    public async Task<ActionResult<List<WishListDtos.WishListResponse>>> GetAll()
+    {
+        var userId = GetCurrentUserId();
+        var wishlists = await _wishListService.GetAllByUserAsync(userId);
+        return Ok(wishlists);
+    }
+
+    // GET /api/wishlists/{id}
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<WishListDtos.WishListResponse>> GetById(Guid id)
+    {
+        var result = await _wishListService.GetByIdAsync(id, GetCurrentUserId());
+
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    // POST /api/wishlists
+    [HttpPost]
+    public async Task<ActionResult<WishListDtos.WishListResponse>> Create(WishListDtos.CreateWishListRequest request)
+    {
+        var result = await _wishListService.CreateAsync(GetCurrentUserId(), request);
+
+        // 201 Created — includes a Location header pointing to the new resource
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    // PUT /api/wishlists/{id}
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<WishListDtos.WishListResponse>> Update(Guid id, WishListDtos.UpdateWishListRequest request)
+    {
+        var result = await _wishListService.UpdateAsync(id, GetCurrentUserId(), request);
+
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    // DELETE /api/wishlists/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _wishListService.DeleteAsync(id, GetCurrentUserId());
+
+        return deleted ? NoContent() : NotFound();
+    }
+
+    // Temporary helper — returns a hardcoded userId until auth is implemented
+    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
+}
