@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace WishListApp.Models;
 
 public class Booking
@@ -8,6 +10,7 @@ public class Booking
     public DateTime BookedAt { get; set; } = DateTime.UtcNow;
 
     public WishListItem Item { get; set; } = null!;
+    [ForeignKey(nameof(BookedByUserId))]
     public User BookedBy { get; set; } = null!;
     
 }

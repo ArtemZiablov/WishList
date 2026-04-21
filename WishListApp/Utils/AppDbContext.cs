@@ -1,13 +1,14 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using WishListApp.Models;
 
 namespace WishListApp;
 
-public class AppDbContext: DbContext
+public class AppDbContext: IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<User> Users => Set<User>();
     public DbSet<WishList> WishLists => Set<WishList>();
     public DbSet<WishListItem> WishListItems => Set<WishListItem>();
     public DbSet<Booking> Bookings => Set<Booking>();
@@ -15,6 +16,8 @@ public class AppDbContext: DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder); 
+        
         // One-to-one: WishListItem → Booking
         modelBuilder.Entity<Booking>()
             .HasOne(b => b.Item)

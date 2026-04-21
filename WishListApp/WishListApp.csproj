@@ -9,6 +9,8 @@
     <ItemGroup>
         <!-- OpenAPI/Swagger support for API documentation -->
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.14" />
 
         <!-- Core Entity Framework ORM for database operations -->

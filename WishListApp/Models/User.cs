@@ -1,9 +1,10 @@
 namespace WishListApp.Models;
+using Microsoft.AspNetCore.Identity;
 
-public class User
+public class User: IdentityUser<Guid>
 {
-    public Guid Id { get; set; }
-    public string Email { get; set; } = string.Empty;
+    /*public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;*/
     public string DisplayName { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

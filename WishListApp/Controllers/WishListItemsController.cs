@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using WishListApp.DTOs;
 using WishListApp.Interfaces;
@@ -63,5 +64,6 @@ public class WishListItemsController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private Guid GetCurrentUserId() =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using WishListApp.DTOs;
 using WishListApp.Interfaces;
@@ -61,6 +62,6 @@ public class WishListController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-    // Temporary helper — returns a hardcoded userId until auth is implemented
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private Guid GetCurrentUserId() =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

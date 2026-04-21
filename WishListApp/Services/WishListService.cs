@@ -49,9 +49,9 @@ public class WishListService : IWishListService
 
     public async Task<WishListDtos.WishListResponse?> UpdateAsync(Guid id, Guid userId, WishListDtos.UpdateWishListRequest request)
     {
-        var wishList = _db.WishLists
+        var wishList = await _db.WishLists
             .Include(w => w.Items)
-            .FirstOrDefault(w => w.Id == id && w.OwnerId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.OwnerId == userId);
         
         if (wishList is null) return null;
         

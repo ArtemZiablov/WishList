@@ -19,7 +19,7 @@ public class UserService : IUserService
     public async Task<UserDtos.UserResponse?> GetByIdAsync(Guid userId)
     {
         var user = await _db.Users.FindAsync(userId);
-        return _mapper.Map<UserDtos.UserResponse>(user);
+        return _mapper.Map<UserDtos.UserResponse?>(user);
     }
 
     public async Task<List<UserDtos.UserResponse>> SearchByEmailAsync(string email)
