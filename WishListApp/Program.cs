@@ -58,7 +58,7 @@ builder.Services.AddIdentityCore<User>(options =>
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders()
-    .AddSignInManager<SignInManager<User>>(); 
+    .AddSignInManager(); 
 
 // JWT auth — needed so your API can issue and validate tokens
 builder.Services.AddAuthentication(options =>
