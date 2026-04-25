@@ -186,6 +186,9 @@ namespace WishListApp.Migrations
                     b.Property<Guid>("AddresseeId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("RequesterId")
                         .HasColumnType("uuid");
 
