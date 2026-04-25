@@ -24,8 +24,7 @@ builder.Services.AddSwaggerGen();
 
 // Add Identity — wires up password hashing, user management, sign-in logic
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
-    {
-        // Relax defaults for development — tighten these for production
+    { 
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 6;
         options.Password.RequireNonAlphanumeric = false;

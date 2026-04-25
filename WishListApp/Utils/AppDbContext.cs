@@ -12,7 +12,7 @@ public class AppDbContext: IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<WishList> WishLists => Set<WishList>();
     public DbSet<WishListItem> WishListItems => Set<WishListItem>();
     public DbSet<Booking> Bookings => Set<Booking>();
-    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<Friendship> Friendships => Set<Friendship>(); 
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
