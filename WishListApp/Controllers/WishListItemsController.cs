@@ -6,8 +6,8 @@ using WishListApp.Interfaces;
 namespace WishListApp.Controllers;
 
 [ApiController]
-[Route("api/wishlists/{wishListId:guid}/items")]  // nested route
-public class WishListItemsController : ControllerBase
+[Route("api/wishlists/{wishListId:guid}/items")]
+public class WishListItemsController : BaseController
 {
     private readonly IWishListItemService _itemService;
 
@@ -63,8 +63,4 @@ public class WishListItemsController : ControllerBase
         var deleted = await _itemService.DeleteAsync(itemId, GetCurrentUserId());
         return deleted ? NoContent() : NotFound();
     }
-
-    /*private Guid GetCurrentUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);*/
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
 }

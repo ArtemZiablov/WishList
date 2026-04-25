@@ -7,7 +7,7 @@ namespace WishListApp.Controllers;
 
 [ApiController]
 [Route("api/users")]
-public class UserController : ControllerBase
+public class UserController : BaseController
 {
     private readonly IUserService _userService;
 
@@ -42,6 +42,4 @@ public class UserController : ControllerBase
         var result = await _userService.UpdateProfileAsync(GetCurrentUserId(), request);
         return result is null ? NotFound() : Ok(result);
     }
-
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
 }

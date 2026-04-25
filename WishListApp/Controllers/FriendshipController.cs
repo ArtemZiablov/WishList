@@ -8,7 +8,7 @@ namespace WishListApp.Controllers;
 
 [ApiController]
 [Route("api/friends")]
-public class FriendshipController : ControllerBase
+public class FriendshipController : BaseController
 {
     private readonly IFriendshipService _friendshipService;
 
@@ -52,6 +52,4 @@ public class FriendshipController : ControllerBase
 
         return success ? NoContent() : BadRequest("Could not respond to this request.");
     }
-
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
 }

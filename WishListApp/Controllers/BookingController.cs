@@ -6,7 +6,7 @@ namespace WishListApp.Controllers;
 
 [ApiController]
 [Route("api/items/{itemId:guid}/booking")]
-public class BookingController : ControllerBase
+public class BookingController : BaseController
 {
     private readonly IBookingService _bookingService;
 
@@ -32,6 +32,4 @@ public class BookingController : ControllerBase
 
         return success ? NoContent() : NotFound("Booking not found or you did not make this booking.");
     }
-
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
 }

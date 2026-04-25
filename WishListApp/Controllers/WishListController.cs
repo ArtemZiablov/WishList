@@ -6,8 +6,8 @@ using WishListApp.Interfaces;
 namespace WishListApp.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]  // → /api/wishlist
-public class WishListController : ControllerBase
+[Route("api/[controller]")]  // /api/wishlist
+public class WishListController : BaseController
 {
     private readonly IWishListService _wishListService;
 
@@ -16,7 +16,7 @@ public class WishListController : ControllerBase
         _wishListService = wishListService;
     }
 
-    // GET /api/wishlists
+    // GET /api/wishlist
     [HttpGet]
     public async Task<ActionResult<List<WishListDtos.WishListResponse>>> GetAll()
     {
@@ -25,7 +25,7 @@ public class WishListController : ControllerBase
         return Ok(wishlists);
     }
 
-    // GET /api/wishlists/{id}
+    // GET /api/wishlist/{id}
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<WishListDtos.WishListResponse>> GetById(Guid id)
     {
@@ -34,7 +34,7 @@ public class WishListController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
-    // POST /api/wishlists
+    // POST /api/wishlist
     [HttpPost]
     public async Task<ActionResult<WishListDtos.WishListResponse>> Create(WishListDtos.CreateWishListRequest request)
     {
@@ -44,7 +44,7 @@ public class WishListController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    // PUT /api/wishlists/{id}
+    // PUT /api/wishlist/{id}
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<WishListDtos.WishListResponse>> Update(Guid id, WishListDtos.UpdateWishListRequest request)
     {
@@ -53,7 +53,7 @@ public class WishListController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
-    // DELETE /api/wishlists/{id}
+    // DELETE /api/wishlist/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -61,6 +61,4 @@ public class WishListController : ControllerBase
 
         return deleted ? NoContent() : NotFound();
     }
-
-    private Guid GetCurrentUserId() => Guid.Parse("00000000-0000-0000-0000-000000000001");
 }

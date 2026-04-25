@@ -19,7 +19,7 @@ public class UserService : IUserService
     public async Task<UserDtos.UserResponse?> GetByIdAsync(Guid userId)
     {
         var user = await _db.Users.FindAsync(userId);
-        return _mapper.Map<UserDtos.UserResponse?>(user);
+        return user is null ? null : _mapper.Map<UserDtos.UserResponse?>(user);
     }
 
     public async Task<List<UserDtos.UserResponse>> SearchByEmailAsync(string email)
@@ -28,7 +28,7 @@ public class UserService : IUserService
 
         // Case-insensitive partial match
         var users = await _db.Users
-            .Where(u => u.Email.ToLower().Contains(email.ToLower()))
+            .Where(u => u.Email != null && u.Email.ToLower().Contains(email.ToLower()))
             .Take(10)
             .ToListAsync();
 
