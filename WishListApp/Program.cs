@@ -87,6 +87,8 @@ builder.Services.AddScoped<IWishListItemService, WishListItemService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IWishListAccessService, WishListAccessService>();
+
 
 builder.Services.AddAutoMapper(typeof(Program));
 

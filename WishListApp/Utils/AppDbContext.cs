@@ -13,6 +13,8 @@ public class AppDbContext: IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<WishListItem> WishListItems => Set<WishListItem>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Friendship> Friendships => Set<Friendship>(); 
+    public DbSet<WishListAccessRequest> WishListAccessRequests => Set<WishListAccessRequest>();
+
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,5 +49,21 @@ public class AppDbContext: IdentityDbContext<User, IdentityRole<Guid>, Guid>
         modelBuilder.Entity<WishListItem>()
             .Property(i => i.EstimatedPrice)
             .HasPrecision(10, 2);
+        
+        modelBuilder.Entity<WishListAccessRequest>()
+            .HasIndex(r => new { r.WishListId, r.RequestedByUserId })
+            .IsUnique();
+
+        modelBuilder.Entity<WishListAccessRequest>()
+            .HasOne(r => r.WishList)
+            .WithMany()
+            .HasForeignKey(r => r.WishListId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<WishListAccessRequest>()
+            .HasOne(r => r.RequestedBy)
+            .WithMany()
+            .HasForeignKey(r => r.RequestedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

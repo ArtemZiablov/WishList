@@ -10,7 +10,8 @@ public class WishListDtos
         string Title,
         string? Description,
         EventType EventType,
-        DateTime? EventDate
+        DateTime? EventDate,
+        WishListVisibility Visibility
     );
 
     // What the client sends when UPDATING
@@ -18,7 +19,8 @@ public class WishListDtos
         string Title,
         string? Description,
         EventType EventType,
-        DateTime? EventDate
+        DateTime? EventDate,
+        WishListVisibility Visibility
     );
 
     // What the API sends BACK to the client
@@ -29,6 +31,8 @@ public class WishListDtos
         EventType EventType,
         DateTime? EventDate,
         string ShareToken,
-        int ItemCount
+        string? InviteToken,
+        int ItemCount,
+        WishListVisibility Visibility
     );
 }
