@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using WishListApp.DTOs;
 using WishListApp.Interfaces;
