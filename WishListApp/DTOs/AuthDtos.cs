@@ -14,10 +14,9 @@ public class AuthDtos
     );
 
     public record AuthResponse(
-        string Token,
-        DateTime ExpiresAt,
         Guid UserId,
         string Email,
-        string DisplayName
+        string DisplayName,
+        string? AvatarUrl
     );
 }

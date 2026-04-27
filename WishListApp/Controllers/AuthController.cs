@@ -1,10 +1,12 @@
-using System.IdentityModel.Tokens.Jwt;
+// Controllers/AuthController.cs
 using System.Security.Claims;
-using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using WishListApp.DTOs;
+using WishListApp.Interfaces;
 using WishListApp.Models;
 
 namespace WishListApp.Controllers;
@@ -15,15 +17,18 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
+    private readonly IAuthTokenProcessor _tokenProcessor;
     private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
+        IAuthTokenProcessor tokenProcessor,
         IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _tokenProcessor = tokenProcessor;
         _configuration = configuration;
     }
 
@@ -31,7 +36,6 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthDtos.AuthResponse>> Register(AuthDtos.RegisterRequest request)
     {
-        // Check if email is already taken
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null)
             return Conflict("A user with this email already exists.");
@@ -44,18 +48,15 @@ public class AuthController : ControllerBase
             CreatedAt = DateTime.UtcNow,
         };
 
-        // UserManager hashes the password and saves the user
         var result = await _userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
-        {
-            // result.Errors contains things like "Password too short"
-            var errors = result.Errors.Select(e => e.Description);
-            return BadRequest(errors);
-        }
+            return BadRequest(result.Errors.Select(e => e.Description));
 
-        var token = GenerateJwtToken(user);
-        return Ok(BuildAuthResponse(user, token));
+        // Issue tokens immediately after registration — no need to log in separately
+        await IssueTokensToUser(user);
+
+        return Ok(new AuthDtos.AuthResponse(user.Id, user.Email!, user.DisplayName, user.AvatarUrl));
     }
 
     // POST /api/auth/login
@@ -66,55 +67,193 @@ public class AuthController : ControllerBase
         if (user is null)
             return Unauthorized("Invalid email or password.");
 
-        // CheckPasswordSignInAsync verifies the hash — lockoutOnFailure tracks failed attempts
         var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
 
         if (result.IsLockedOut)
-            return StatusCode(429, "Account is locked due to too many failed attempts. Try again later.");
+            return StatusCode(429, "Account locked. Try again later.");
 
         if (!result.Succeeded)
             return Unauthorized("Invalid email or password.");
 
-        var token = GenerateJwtToken(user);
-        return Ok(BuildAuthResponse(user, token));
+        await IssueTokensToUser(user);
+
+        return Ok(new AuthDtos.AuthResponse(user.Id, user.Email!, user.DisplayName, user.AvatarUrl));
     }
 
-    // Private helpers
-    private string GenerateJwtToken(User user)
+    // POST /api/auth/refresh
+    // Called automatically by the frontend when the access token expires.
+    // Reads the refresh token from the HttpOnly cookie — the frontend doesn't touch it.
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthDtos.AuthResponse>> Refresh()
     {
-        // Claims are key-value pairs embedded inside the token
-        // These are what your controllers read via User.FindFirstValue(...)
-        var claims = new[]
+        var refreshToken = Request.Cookies["REFRESH_TOKEN"];
+
+        if (string.IsNullOrEmpty(refreshToken))
+            return Unauthorized("Refresh token is missing.");
+
+        // Find the user who owns this refresh token
+        var user = await _userManager.Users
+            .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+
+        if (user is null)
+            return Unauthorized("Invalid refresh token.");
+
+        if (user.RefreshTokenExpiresAtUtc < DateTime.UtcNow)
+            return Unauthorized("Refresh token has expired. Please log in again.");
+
+        // Issue a completely new pair of tokens — the old refresh token is replaced
+        await IssueTokensToUser(user);
+
+        return Ok(new AuthDtos.AuthResponse(user.Id, user.Email!, user.DisplayName, user.AvatarUrl));
+    }
+
+    // POST /api/auth/logout
+    // Clears the cookies and invalidates the refresh token in the DB.
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        var refreshToken = Request.Cookies["REFRESH_TOKEN"];
+
+        if (!string.IsNullOrEmpty(refreshToken))
         {
-            // NameIdentifier = the userId — this is what GetCurrentUserId() reads
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email!),
-            new Claim(ClaimTypes.Name, user.DisplayName),
-            // JTI = unique ID for this token — useful for token revocation later
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        };
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            if (user is not null)
+            {
+                // Invalidate the refresh token so it can't be reused after logout
+                user.RefreshToken = null;
+                user.RefreshTokenExpiresAtUtc = null;
+                await _userManager.UpdateAsync(user);
+            }
+        }
 
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        // Delete the cookies by setting them to expire immediately
+        Response.Cookies.Delete("ACCESS_TOKEN");
+        Response.Cookies.Delete("REFRESH_TOKEN");
 
-        var expiresAt = DateTime.UtcNow.AddDays(7);  // token valid for 7 days
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: expiresAt,
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return NoContent();
     }
 
-    private static AuthDtos.AuthResponse BuildAuthResponse(User user, string token)
+    // GET /api/auth/google
+    // Step 1: redirect the browser to Google's login page.
+    // Uses SignInManager which automatically adds CSRF correlation tokens for security.
+    [HttpGet("google")]
+    public IActionResult GoogleLogin([FromQuery] string returnUrl = "/")
     {
-        var expiry = DateTime.UtcNow.AddDays(7);
-        return new AuthDtos.AuthResponse(token, expiry, user.Id, user.Email!, user.DisplayName);
+        // ConfigureExternalAuthenticationProperties builds the correct Google redirect URL
+        // and embeds a CSRF token to verify the callback is legitimate
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties(
+            "Google",
+            Url.Action(nameof(GoogleCallback), new { returnUrl }));
+
+        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+    }
+
+    // GET /api/auth/google/callback
+    // Step 2: Google redirects here. By this point ASP.NET has already exchanged
+    // the authorization code for user info — we just read what Google told us.
+    [HttpGet("google/callback")]
+    public async Task<IActionResult> GoogleCallback([FromQuery] string returnUrl = "/")
+    {
+        // Read the result that the Google middleware already prepared
+        var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+        if (!result.Succeeded)
+            return Redirect(BuildFrontendErrorUrl(returnUrl, "google_auth_failed"));
+
+        var claimsPrincipal = result.Principal;
+        var email = claimsPrincipal?.FindFirstValue(ClaimTypes.Email);
+
+        if (email is null)
+            return Redirect(BuildFrontendErrorUrl(returnUrl, "missing_email"));
+
+        // Try to find existing user — this implements Option 1 (auto-merge)
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user is null)
+        {
+            // First time logging in with Google — create a new account.
+            // No password because they'll always authenticate via Google.
+            user = new User
+            {
+                UserName = email,
+                Email = email,
+                DisplayName = claimsPrincipal?.FindFirstValue(ClaimTypes.Name)
+                              ?? email.Split('@')[0],
+                AvatarUrl = claimsPrincipal?.Claims
+                    .FirstOrDefault(c => c.Type.Contains("picture"))?.Value,
+                EmailConfirmed = true, // Google already verified this
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            var createResult = await _userManager.CreateAsync(user);
+
+            if (!createResult.Succeeded)
+                return Redirect(BuildFrontendErrorUrl(returnUrl, "account_creation_failed"));
+        }
+        else if (user.AvatarUrl is null)
+        {
+            // Backfill avatar for existing users who didn't have one
+            var pictureUrl = claimsPrincipal?.Claims
+                .FirstOrDefault(c => c.Type.Contains("picture"))?.Value;
+
+            if (pictureUrl is not null)
+            {
+                user.AvatarUrl = pictureUrl;
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
+        // Link this Google account to the user in the AspNetUserLogins table.
+        // This is the correct Identity way to track external login providers.
+        // It stores the Google ID so future logins can be matched by Google ID,
+        // not just email — more reliable since emails can change.
+        var googleId = claimsPrincipal?.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var loginInfo = new UserLoginInfo("Google", googleId, "Google");
+
+        // AddLoginAsync is idempotent — if the link already exists it returns success
+        var existingLogin = await _userManager.FindByLoginAsync("Google", googleId);
+        if (existingLogin is null)
+        {
+            var addLoginResult = await _userManager.AddLoginAsync(user, loginInfo);
+            if (!addLoginResult.Succeeded)
+                return Redirect(BuildFrontendErrorUrl(returnUrl, "login_link_failed"));
+        }
+
+        // Issue tokens as HttpOnly cookies — same as email/password login
+        await IssueTokensToUser(user);
+
+        // Redirect to React. Tokens are in cookies, not the URL.
+        var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
+        return Redirect($"{frontendBase}{returnUrl}");
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    // Generates both tokens and writes them as HttpOnly cookies.
+    // Called from Register, Login, Refresh, and GoogleCallback — all in one place.
+    private async Task IssueTokensToUser(User user)
+    {
+        var (jwtToken, jwtExpiresAt) = _tokenProcessor.GenerateJwtToken(user);
+        var refreshToken = _tokenProcessor.GenerateRefreshToken();
+        var refreshExpiresAt = DateTime.UtcNow.AddDays(7);
+
+        // Persist the refresh token — we need to look it up later in /refresh
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiresAtUtc = refreshExpiresAt;
+        await _userManager.UpdateAsync(user);
+
+        // Write both tokens as HttpOnly cookies — browser handles them automatically
+        _tokenProcessor.WriteAuthTokenAsHttpOnlyCookie("ACCESS_TOKEN", jwtToken, jwtExpiresAt);
+        _tokenProcessor.WriteAuthTokenAsHttpOnlyCookie("REFRESH_TOKEN", refreshToken, refreshExpiresAt);
+    }
+
+    private string BuildFrontendErrorUrl(string returnUrl, string error)
+    {
+        var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
+        return $"{frontendBase}/auth/error?error={error}&returnUrl={returnUrl}";
     }
 }
